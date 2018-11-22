@@ -8,12 +8,13 @@ import dash_html_components as html
 import dateutil
 import plotly.graph_objs as go
 import pandas as pd
+from datetime import datetime as dt
 
 
-app = dash.Dash()
-app.css.append_css({
-    "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
-})
+app = dash.Dash(__name__)
+# app.css.append_css({
+#     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
+# })
 
 ##############################################################
 #                                                            #
@@ -53,15 +54,28 @@ app.layout = html.Div(children=[
     dcc.Dropdown(
         id='channel',
         options=[{'label': i, 'value': i} for i in CHANNELS],
-        # value = 'teufel-shop',
-        multi=True
+        multi=True,
+        value = ['teufel-shop'],
+        className = 'dropdown'
     ),
     dcc.Dropdown(
         id='metrics',
         options=[{'label': i, 'value': i} for i in METRICS],
-        # value = 'Bestellungen',
-        multi=False
+        multi=False,
+        value = 'Umsatz',
+        className = 'dropdown'
     ),
+    dcc.DatePickerRange(
+        id='my-date-picker-range',
+        min_date_allowed=dt(2018, 1, 1),
+        max_date_allowed=dt(2019, 11, 21),
+        initial_visible_month=dt(2018,11, 1),
+        display_format='DD/MM/YYYY',
+        start_date=dt(2018, 11, 1),
+        end_date=dt(2018, 11, 14),
+        # end_date=dt.now(),
+    ),
+    html.Div(id='output-container-date-picker-range'),
     dcc.Graph(
         id='usd-pledged-vs-date',
     ),
@@ -77,109 +91,62 @@ app.layout = html.Div(children=[
 #                                                            #
 ##############################################################
 
+@app.callback(
+    dash.dependencies.Output('output-container-date-picker-range', 'children'),
+    [dash.dependencies.Input('my-date-picker-range', 'start_date'),
+     dash.dependencies.Input('my-date-picker-range', 'end_date')])
+def update_output(start_date, end_date):
+    string_prefix = 'You have selected: '
+    if start_date is not None:
+        start_date = dt.strptime(start_date, '%Y-%m-%d')
+        start_date_string = start_date.strftime('%B %d, %Y')
+        string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
+    if end_date is not None:
+        end_date = dt.strptime(end_date, '%Y-%m-%d')
+        end_date_string = end_date.strftime('%B %d, %Y')
+        string_prefix = string_prefix + 'End Date: ' + end_date_string
+    if len(string_prefix) == len('You have selected: '):
+        return 'Select a date to see it displayed here'
+    else:
+        return string_prefix
+
 
 @app.callback(
     dash.dependencies.Output('usd-pledged-vs-date', 'figure'),
     [
         dash.dependencies.Input('channel', 'value'),
         dash.dependencies.Input('metrics', 'value'),
+        dash.dependencies.Input('my-date-picker-range', 'start_date'),
+        dash.dependencies.Input('my-date-picker-range', 'end_date'),
     ])
-def update_scatterplot(channel, metric ):
+def update_scatterplot(channel, metric, start_date, end_date ):
     if channel is None or channel == []:
         channel = CHANNELS
-    
+    print('channel', channel)
     if metric is None or metric == []:
         # metric = METRICS
         metric = 'Bestellungen'
-
+    print('metric', metric)
     sub_df = {}
     traces = {} 
     for c in channel:
-        sub_df[c] = df[df.Kanal == c]
-    #     print( sub_df[c])
-        traces[c] = go.Scatter(x=sub_df[c].Datum, y=sub_df[c][metric], mode='lines', name=metric )
-    
-    # sub_df_x = df[(df.Kanal.isin(channel))]
-    print(metric)
-    # print(sub_df_x[metric])
-    # sub_df_y = df[(df.Kanal.isin(channel))][metric]
-    
-    print(channel)
+        print(c)
+        sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
+        traces[c] = go.Scatter(x=sub_df[c].Datum, y=sub_df[c][metric], mode='lines', name=c )
 
     return {
-        'data': [ traces[key] for key in channel
-            # go.Scatter(
-            #     x=sub_df_x.Datum,
-            #     y=sub_df_x[metric],
-            #     # text=sub_df[(kickstarter_df_sub.state == state)]['name'],
-            #     mode='lines',
-            #     opacity=0.7,
-            #     # marker={
-            #     #     'size': 15,
-            #     #     'color': color,
-            #     #     'line': {'width': 0.5, 'color': 'white'}
-            #     # },
-            #      name=metric,
-            # ) 
-            # for (state, color) in zip(STATES, COLORS)
-        ],
+        'data': [ traces[key] for key in channel],
         'layout': go.Layout(
             xaxis={'title': 'Date'},
-            # yaxis={'title': ''},
-            margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-            legend={'x': 0, 'y': 1},
+            yaxis={'title': metric},
+            margin={'l': 60, 'b': 40, 't': 50, 'r': 60},
+            legend=dict(orientation="h"),
             hovermode='closest'
         )
     }
 
 
-# @app.callback(
-#     dash.dependencies.Output('count-state-vs-category', 'figure'),
-#     [
-#         dash.dependencies.Input('categories', 'value'),
-#         dash.dependencies.Input('usd-pledged-vs-date', 'relayoutData')
-#     ])
-# def update_bar_chart(categories, relayoutData):
-#     if categories is None or categories == []:
-#         categories = CATEGORIES
 
-#     if (relayoutData is not None
-#             and (not (relayoutData.get('xaxis.autorange') or relayoutData.get('yaxis.autorange')))):
-#         x0 = dateutil.parser.parse(relayoutData['xaxis.range[0]'])
-#         x1 = dateutil.parser.parse(relayoutData['xaxis.range[1]'])
-#         y0 = 10 ** relayoutData['yaxis.range[0]']
-#         y1 = 10 ** relayoutData['yaxis.range[1]']
-
-#         sub_df = kickstarter_df[kickstarter_df.created_at.between(x0, x1) & kickstarter_df.usd_pledged.between(y0, y1)]
-#     else:
-#         sub_df = kickstarter_df
-
-#     stacked_barchart_df = (
-#         sub_df[sub_df['broader_category'].isin(categories)]['state'].groupby(sub_df['broader_category'])
-#         .value_counts(normalize=False)
-#         .rename('count')
-#         .to_frame()
-#         .reset_index('state')
-#         .pivot(columns='state')
-#         .reset_index()
-#     )
-#     return {
-#         'data': [
-#             go.Bar(
-#                 x=stacked_barchart_df['broader_category'],
-#                 y=stacked_barchart_df['count'][state],
-#                 name=state,
-#                 marker={
-#                     'color': color
-#                 }
-#             ) for (state, color) in zip(STATES[::-1], COLORS[::-1])
-#         ],
-#         'layout': go.Layout(
-#             yaxis={'title': 'Number of projects'},
-#             barmode='stack',
-#             hovermode='closest'
-#         )
-#     }
 
 ##############################################################
 #                                                            #

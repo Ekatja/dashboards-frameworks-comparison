@@ -1,0 +1,43 @@
+/* Base Styles
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+/* NOTE
+html is set to 62.5% so that all the REM measurements throughout Skeleton
+are based on 10px sizing. So basically 1.5rem = 15px :) */
+html {
+    font-size: 62.5%; 
+}
+body {
+    font-size: 1.5em; /* currently ems cause chrome bug misinterpreting rems on body element */
+    line-height: 1.6;
+    font-weight: 400;
+    font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: rgb(50, 50, 50); 
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: hotpink
+}
+.dropdown
+/* .DateRangePicker, */
+/* .DateRangePickerInput, */
+/* .DateInput--open-down  */
+{
+    height: 38px;
+    /* width: 250px; */
+    margin: 6px 10px; /*The 6px vertically centers text on FF, ignored by Webkit*/
+    background-color: #fff;
+    border: 1px solid #D1D1D1;
+    border-radius: 4px;
+    box-shadow: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: inherit; 
+}
+.dropdown:focus {
+    border: 1px solid #33C3F0;
+    outline: 0; 
+}
+#channel, #metrics {
+width: 20%;
+display: inline-table;
+}
