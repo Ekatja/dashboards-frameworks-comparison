@@ -53,12 +53,14 @@ app.layout = html.Div(children=[
     dcc.Dropdown(
         id='channel',
         options=[{'label': i, 'value': i} for i in CHANNELS],
+        # value = 'teufel-shop',
         multi=True
     ),
     dcc.Dropdown(
         id='metrics',
         options=[{'label': i, 'value': i} for i in METRICS],
-        multi=True
+        # value = 'Bestellungen',
+        multi=False
     ),
     dcc.Graph(
         id='usd-pledged-vs-date',
@@ -90,29 +92,40 @@ def update_scatterplot(channel, metric ):
         # metric = METRICS
         metric = 'Bestellungen'
 
-    sub_df_x = df[(df.Kanal.isin(channel))]
-    sub_df_y = df[(df.Kanal.isin(channel))][metric]
+    sub_df = {}
+    traces = {} 
+    for c in channel:
+        sub_df[c] = df[df.Kanal == c]
+    #     print( sub_df[c])
+        traces[c] = go.Scatter(x=sub_df[c].Datum, y=sub_df[c][metric], mode='lines', name=metric )
+    
+    # sub_df_x = df[(df.Kanal.isin(channel))]
+    print(metric)
+    # print(sub_df_x[metric])
+    # sub_df_y = df[(df.Kanal.isin(channel))][metric]
+    
+    print(channel)
 
     return {
-        'data': [
-            go.Scatter(
-                x=sub_df_x.Datum,
-                y=sub_df_y,
-                # text=sub_df[(kickstarter_df_sub.state == state)]['name'],
-                mode='lines',
-                opacity=0.7,
-                # marker={
-                #     'size': 15,
-                #     'color': color,
-                #     'line': {'width': 0.5, 'color': 'white'}
-                # },
-                # name=state,
-            ) 
+        'data': [ traces[key] for key in channel
+            # go.Scatter(
+            #     x=sub_df_x.Datum,
+            #     y=sub_df_x[metric],
+            #     # text=sub_df[(kickstarter_df_sub.state == state)]['name'],
+            #     mode='lines',
+            #     opacity=0.7,
+            #     # marker={
+            #     #     'size': 15,
+            #     #     'color': color,
+            #     #     'line': {'width': 0.5, 'color': 'white'}
+            #     # },
+            #      name=metric,
+            # ) 
             # for (state, color) in zip(STATES, COLORS)
         ],
         'layout': go.Layout(
             xaxis={'title': 'Date'},
-            yaxis={'title': 'USD pledged'},
+            # yaxis={'title': ''},
             margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
             legend={'x': 0, 'y': 1},
             hovermode='closest'
