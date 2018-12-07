@@ -22,19 +22,55 @@ app = dash.Dash(__name__)
 #                                                            #
 ##############################################################
 
-#kickstarter_df = pd.read_csv('C:\\Users\\Ekaterina\\Documents\\dashboards-frameworks-comparison\\dash\\kickstarter-cleaned.csv', parse_dates=True)
+# Connect to mysql database
+#connection = sql.connect(user='ekaterina', password='aeLier4tait2yahx', host='127.0.0.1')
+#cursor = connection.cursor()
+# Build a SQL query and run it
+query = ("""
+    SELECT 
+        sc.name AS Kanal,
+        DATE(o.shop_order_date) AS Datum,
+        COUNT(DISTINCT o.id) AS Bestellungen,
+        SUM(IF(oa.single_net_price = 0,
+            o.items_net_price,
+            oa.amount*oa.single_net_price)) AS Umsatz,
+        SUM(IF(oa.single_net_price = 0,
+            o.items_net_price,
+            oa.amount*oa.single_net_price)) - SUM(oa.amount*oa.vendor_price_at_vendor_order) AS RE1_abs,
+        (SUM(IF(oa.single_net_price = 0,
+            o.items_net_price,
+            oa.amount*oa.single_net_price)) - SUM(oa.amount*oa.vendor_price_at_vendor_order)) / SUM(IF(oa.single_net_price = 0,
+            o.items_net_price,
+            oa.amount*oa.single_net_price)) AS RE1_rel,
+        SUM(IF(oa.single_net_price = 0,
+            o.items_net_price,
+            oa.amount*oa.single_net_price)) / COUNT(DISTINCT o.id) AS AvgWarenkorbwert,
+        COUNT(oa.vendor_article_number) / COUNT(DISTINCT o.id) AS AnzahlArtikelproWarenkorb
+    FROM
+        rig.order_articles oa
+            JOIN
+        rig.orders o ON o.id = oa.order_id
+            JOIN
+        rig.shop_channels sc ON sc.id = o.shop_channel_id
+    WHERE
+        YEAR(o.shop_order_date) = 2018
+        AND o.status IN ('sent' , 'packaged', 'delivered')
+        AND oa.vendor_price_at_vendor_order > 0
+    GROUP BY o.shop_channel_id , DATE(o.shop_order_date)
+    ;
+    """)
+#cursor.execute(query)
+# Store results in a pandas data frame
+#df = pd.read_sql(query, connection) 
+# Close cursor
+# cursor.close()
 
-df = pd.read_csv('C:\\Users\\Ekaterina\\Documents\\dashboards-frameworks-comparison\\dash\\verkaufte_artikel_2018.csv', parse_dates=True)
+df = pd.read_csv('.\\dash\\verkaufte_artikel_2018.csv', parse_dates=True)
 
-# kickstarter_df['broader_category'] = kickstarter_df['category_slug'].str.split('/').str.get(0)
-# kickstarter_df['created_at'] = pd.to_datetime(kickstarter_df['created_at'])
-
-# kickstarter_df_sub = kickstarter_df.sample(10000)
 
 METRICS = ['Bestellungen', 'Umsatz', 'RE1_abs', 'RE1_rel', 'AvgWarenkorbwert', 'AnzahlArtikelproWarenkorb']
 CHANNELS = df.Kanal.unique()
-# CATEGORIES = kickstarter_df['broader_category'].unique()
-# COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotlight', 'staff_pick', 'category_slug', 'backers_count', 'country']
+
 # # Picked with http://tristen.ca/hcl-picker/#/hlc/6/1.05/251C2A/E98F55
 COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
 # STATES = ['successful', 'suspended', 'failed', 'canceled']
@@ -68,20 +104,16 @@ app.layout = html.Div(children=[
     dcc.DatePickerRange(
         id='my-date-picker-range',
         min_date_allowed=dt(2018, 1, 1),
-        max_date_allowed=dt(2019, 11, 21),
-        initial_visible_month=dt(2018,11, 1),
+        max_date_allowed=dt.today().date().replace(year=dt.today().year+1),
+        initial_visible_month=dt.today().date().replace(day=1),
         display_format='DD/MM/YYYY',
-        start_date=dt(2018, 11, 1),
-        end_date=dt(2018, 11, 14),
-        # end_date=dt.now(),
+        start_date=dt.today().date().replace(day=1),
+        end_date=dt.today().date()
     ),
     html.Div(id='output-container-date-picker-range'),
     dcc.Graph(
         id='usd-pledged-vs-date',
     ),
-    # dcc.Graph(
-    #     id='count-state-vs-category',
-    # )
 ])
 
 
