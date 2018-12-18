@@ -39,8 +39,8 @@ display: inline-table;
 }
 
 #data-table {
-    table-layout: auto;
+    table-layout: fixed;
+    min-width: 600px;
     width: 50%;
-    padding: 0;
     margin: 10px;
 }

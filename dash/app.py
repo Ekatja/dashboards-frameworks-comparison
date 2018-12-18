@@ -109,6 +109,9 @@ app.layout = html.Div(children=[
         start_date=dt(2018, 11, 1),
         end_date=dt(2018, 11, 10)
     ),
+    
+    html.Div(id='output-container-date-picker-range'),
+    
     dash_table.DataTable(
         id='data-table',
         columns=[{"name": i, "id": i} for i in df[['Kanal', 'Datum', default_metric]].columns],
@@ -118,20 +121,27 @@ app.layout = html.Div(children=[
         'backgroundColor': 'rgba(117, 99, 79, 0.5)',
         'fontSize': '1.2em',
         'fontFamily': 'sans-serif',
-        'fontWeight': 'bold'
+        'fontWeight': 'bold',
+        'paddingLeft': '10px'
         },
         style_cell={
             'textAlign': 'left',
             'fontSize': '1em',
             'fontFamily': 'sans-serif',
+            'minWidth': '60px', 
+            'width': '60px', 
+            'maxWidth': '60px',
+            'whiteSpace': 'no-wrap',
         },
         style_cell_conditional=[{
         'if': {'row_index': 'odd'},
         'backgroundColor': 'rgb(248, 248, 248)'
-        }]
-        
+        }],
+        css=[{
+        'selector': '.dash-cell',
+        'rule': 'padding-left: 10px;'
+        }],
     ),
-    html.Div(id='output-container-date-picker-range'),
     dcc.Graph(
         id='usd-pledged-vs-date',
     ),
@@ -184,19 +194,12 @@ def update_table(channel, metric, start_date, end_date ):
     sub_df = {}
     data = {} 
     for c in channel:
-        print(c)
+        print('table update', c)
         sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
-    # for m in metric:
-    #     print(m)
-    # data = sub_df[c].to_dict('rows')
-        # dash_table.DataTable(
-    #     id='data-table',
-    #     columns=[{"name": i, "id": i} for i in df.columns],
-    #     data=df.to_dict("rows"),
-    # ),
-        data = sub_df[c][['Kanal', 'Datum', metric]]
-        
-    return data.to_dict('records')
+    
+        data[c] = sub_df[c][['Kanal', 'Datum', metric]]
+    # print([ data[key].to_dict('records') for key in channel])
+    return  data[c].to_dict('records')  
         
     
 #Update graphic
@@ -219,7 +222,7 @@ def update_scatterplot(channel, metric, start_date, end_date ):
     sub_df = {}
     traces = {} 
     for c in channel:
-        print(c)
+        #print(c)
         sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
         traces[c] = go.Scatter(x=sub_df[c].Datum, y=sub_df[c][metric], mode='lines', name=c )
 
