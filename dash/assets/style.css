@@ -17,11 +17,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
     color: hotpink
 }
-.dropdown
-/* .DateRangePicker, */
-/* .DateRangePickerInput, */
-/* .DateInput--open-down  */
-{
+.dropdown {
     height: 38px;
     /* width: 250px; */
     margin: 6px 10px; /*The 6px vertically centers text on FF, ignored by Webkit*/
@@ -40,4 +36,11 @@ h1, h2, h3, h4, h5, h6 {
 #channel, #metrics {
 width: 20%;
 display: inline-table;
+}
+
+#data-table {
+    table-layout: auto;
+    width: 50%;
+    padding: 0;
+    margin: 10px;
 }
