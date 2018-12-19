@@ -72,6 +72,7 @@ COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
 default_shop = 'teufel-shop'
 default_metric = 'Umsatz'
 
+app.config['suppress_callback_exceptions']=True
 
 ##############################################################
 #                                                            #
@@ -111,10 +112,13 @@ app.layout = html.Div(children=[
     ),
     
     html.Div(id='output-container-date-picker-range'),
+
+    # html.Div(id='data-table'),
     
     dash_table.DataTable(
         id='data-table',
         columns=[{"name": i, "id": i} for i in df[['Kanal', 'Datum', default_metric]].columns],
+        # columns = [{}],
         data=df.to_dict("rows"),
         
         style_header={
@@ -142,6 +146,31 @@ app.layout = html.Div(children=[
         'rule': 'padding-left: 10px;'
         }],
     ),
+#  html.Div([
+#         dcc.Input(
+#             id='editing-columns-name',
+#             placeholder='Enter a column name...',
+#             value='',
+#             style={'padding': 10}
+#         ),
+#         html.Button('Add Column', id='editing-columns-button', n_clicks=0)
+#     ], style={'height': 50}),
+
+#     dash_table.DataTable(
+#         id='editing-columns',
+#         columns=[{
+#             'name': 'Column {}'.format(i),
+#             'id': 'column-{}'.format(i),
+#             'deletable': True,
+#             'editable_name': True
+#         } for i in range(1, 5)],
+#         data=[
+#             {'column-{}'.format(i): (j + (i-1)*5) for i in range(1, 5)}
+#             for j in range(5)
+#         ],
+#         editable=True,
+#     ),
+
     dcc.Graph(
         id='usd-pledged-vs-date',
     ),
@@ -177,6 +206,8 @@ def update_output(start_date, end_date):
 #Update table
 @app.callback(
     dash.dependencies.Output('data-table', 'data'),
+    # dash.dependencies.Output('data-table', 'columns')
+    # dash.dependencies.Output('data-table', 'children'),
     [
         dash.dependencies.Input('channel', 'value'),
         dash.dependencies.Input('metrics', 'value'),
@@ -185,22 +216,36 @@ def update_output(start_date, end_date):
     ])
 
 def update_table(channel, metric, start_date, end_date ):
+    
     if channel is None or channel == []:
         channel = CHANNELS
     #print('channel', channel)
     if metric is None or metric == []:
         metric = default_metric
-    # print('metric', metric)
+    print('metric', metric)
     sub_df = {}
-    data = {} 
+    data = [] 
+    print('table update channels', channel)
     for c in channel:
-        print('table update', c)
         sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
-    
-        data[c] = sub_df[c][['Kanal', 'Datum', metric]]
-    # print([ data[key].to_dict('records') for key in channel])
-    return  data[c].to_dict('records')  
+        default_metric = metric
+        # print(sub_df[c][['Kanal', 'Datum', metric]])
+        data.append(sub_df[c][['Kanal', 'Datum', metric]])
+    print(pd.concat(data).to_dict('records'))
         
+    return pd.concat(data).to_dict('records')
+
+@app.callback(
+    dash.dependencies.Output('data-table', 'columns'),
+    [dash.dependencies.Input('metrics', 'value')],
+    [dash.dependencies.State('data-table', 'columns')]
+     )
+def update_columns(metric, existing_columns):
+    
+    existing_columns[-1]['name'] = metric
+    existing_columns[-1]['id'] = metric
+    
+    return existing_columns
     
 #Update graphic
 @app.callback(
