@@ -76,6 +76,8 @@ COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
 default_shop = 'teufel-shop'
 default_metric = 'Umsatz'
 
+exportfilename = 'export-data.csv'
+
 app.config['suppress_callback_exceptions']=True
 
 ##############################################################
@@ -134,6 +136,8 @@ app.layout = html.Div(children=[
         id='data-table',
         columns=[{"name": i, "id": i} for i in df[['Kanal', 'Datum', default_metric]].columns],
         data=df.to_dict("rows"),
+        sorting=True,
+        sorting_type="multi",
         
         style_header={
         'backgroundColor': 'rgba(117, 99, 79, 0.5)',
@@ -161,8 +165,32 @@ app.layout = html.Div(children=[
         # 'rule': 'padding-left: 10px;'
         # }],
     ),
+    
+    html.Div([
+       html.Button('Export as CSV', id='export-button'),
+    #    html.P(id='editable-table-hidden', style={'display':'none'}),
+       html.P(id='save-button-hidden', style={'display':'none'}),
     ])
+])
 
+
+
+def filter_data(channel, start_date, end_date):
+    # sub_df = {}
+
+    sub_df = df[(df.Kanal == channel) & (df.Datum >= start_date) & (df.Datum <= end_date)]
+    return sub_df
+
+# def format_date(data):
+#     #Format date column
+#     # print(data['Datum'])
+#     # data['Datum'] = pd.to_datetime(data['Datum'], format='%Y-%m-%d')
+#     # data['Datum'] = data['Datum'].dt.strftime('%d/%m/%Y')
+#     #format last column with metrics depends on column name
+#     if(data.columns[-1] == ('Umsatz' or 'RE1_abs' or 'AvgWarenkorbwert' or 'AnzahlArtikelproWarenkorb')):
+#         data[data.columns[-1]] = data[data.columns[-1]].map('{:.2f}€'.format)
+#     elif(data.columns[-1] == 'RE1_rel'):
+#         data[data.columns[-1]] = (data[data.columns[-1]]*100).map('{:.2f}%'.format)
 
 ##############################################################
 #                                                            #
@@ -196,10 +224,12 @@ app.layout = html.Div(children=[
     [dash.dependencies.Input('channel', 'value'),
     dash.dependencies.Input('metrics', 'value'),
     dash.dependencies.Input('my-date-picker-range', 'start_date'),
-    dash.dependencies.Input('my-date-picker-range', 'end_date'),])
+    dash.dependencies.Input('my-date-picker-range', 'end_date'),
+    dash.dependencies.Input('export-button', 'n_clicks'),
+    ])
 
-def update_table(channel, metric, start_date, end_date ):
-    
+def update_table(channel, metric, start_date, end_date, n_clicks ):
+    print(n_clicks)
     if channel is None or channel == []:
         channel = CHANNELS
     
@@ -209,7 +239,10 @@ def update_table(channel, metric, start_date, end_date ):
     sub_df = {}
     data = [] 
     for c in channel:
-        sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
+        sub_df[c] = filter_data(c, start_date, end_date)
+        # print('sub df get', sub_df[c][['Kanal', 'Datum', metric]] )
+
+        # sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
         #Format date column
         sub_df[c]['Datum'] = sub_df[c]['Datum'].dt.strftime('%d/%m/%Y')
         #Format currency columns
@@ -220,10 +253,17 @@ def update_table(channel, metric, start_date, end_date ):
 
         #Format percent column
         sub_df[c]['RE1_rel'] = (sub_df[c]['RE1_rel']*100).map('{:.2f}%'.format)
-        
         data.append(sub_df[c][['Kanal', 'Datum', metric]])
-        
-    return pd.concat(data).to_dict('records')
+        # data.append(sub_df[c][['Kanal', 'Datum', metric]])
+    result = pd.concat(data)
+    # print(format_date(result))
+    if(n_clicks is not None):
+        print('i am save button')
+        result.to_csv(exportfilename, index=False, encoding='utf-8')
+            
+    return result.to_dict('records')
+
+    
 
 #Update columns
 @app.callback(
@@ -258,7 +298,7 @@ def update_scatterplot(channel, metric, start_date, end_date ):
     sub_df = {}
     traces = {} 
     for c in channel:
-        #print(c)
+        
         sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
         traces[c] = go.Scatter(x=sub_df[c].Datum, y=sub_df[c][metric], mode='lines', name=c )
 
@@ -274,6 +314,25 @@ def update_scatterplot(channel, metric, start_date, end_date ):
         )
     }
 
+#Save datatable as csv
+# @app.callback(dash.dependencies.Output('save-button-hidden', 'children'),
+#              [dash.dependencies.Input('export-button', 'n_clicks')],
+#              [dash.dependencies.State('data-table', 'data')]
+#               )
+
+# def save_current_table(savebutton, channels, metric, start_date, end_date):
+#     table_df = filter_data(channels, metric, start_date, end_date)
+#     print('tablerows', table_df)
+
+#     # table_df = pd.DataFrame(rows) #convert current rows into df
+
+#     # if selected_row_indices:
+#     #     table_df = table_df.loc[selected_row_indices] #filter according to selected rows
+
+#     if savebutton:
+#         print('i am save button')
+#         table_df.to_csv(exportfilename, index=False, encoding='utf-8')
+#         return "Current table saved."
 
 ##############################################################
 #                                                            #
