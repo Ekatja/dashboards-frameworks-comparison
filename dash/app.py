@@ -64,6 +64,10 @@ app = dash.Dash(__name__)
 # cursor.close()
 
 df = pd.read_csv('.\\dash\\verkaufte_artikel_2018.csv', parse_dates=True)
+df[['RE1_rel', 'AvgWarenkorbwert','AnzahlArtikelproWarenkorb']] = df[['RE1_rel', 'AvgWarenkorbwert','AnzahlArtikelproWarenkorb']].apply(lambda x: round(x, 2))
+
+df['Datum'] = pd.to_datetime(df['Datum'], format='%Y-%m-%d')
+
 
 #Konstanten
 METRICS = ['Bestellungen', 'Umsatz', 'RE1_abs', 'RE1_rel', 'AvgWarenkorbwert', 'AnzahlArtikelproWarenkorb']
@@ -82,9 +86,12 @@ app.config['suppress_callback_exceptions']=True
 
 
 app.layout = html.Div(children=[
-    html.H1(children='KPI Dashboard', style={
+    html.H1(
+        children='KPI Dashboard', 
+        style={
         'textAlign': 'center',
-    }),
+        }
+    ),
     dcc.Dropdown(
         id='channel',
         options=[{'label': i, 'value': i} for i in CHANNELS],
@@ -108,17 +115,24 @@ app.layout = html.Div(children=[
         # start_date=dt.today().date().replace(day=1),
         # end_date=dt.today().date()
         start_date=dt(2018, 11, 1),
-        end_date=dt(2018, 11, 10)
+        end_date=dt(2018, 11, 10),
+        
     ),
-    
-    html.Div(id='output-container-date-picker-range'),
-
-    # html.Div(id='data-table'),
-    
+    # html.Div(id='output-container-date-picker-range'),
+    dcc.Graph(
+        id='metric-vs-date',
+        style={
+            'width': '96%',
+            'marginTop': '20px',
+            'marginBottom' : '40px',
+            'fontFamily': 'sans-serif',
+            'fontSize' : '14px',
+            'height' : '470px'
+            },
+    ),
     dash_table.DataTable(
         id='data-table',
         columns=[{"name": i, "id": i} for i in df[['Kanal', 'Datum', default_metric]].columns],
-        # columns = [{}],
         data=df.to_dict("rows"),
         
         style_header={
@@ -136,45 +150,18 @@ app.layout = html.Div(children=[
             'width': '60px', 
             'maxWidth': '60px',
             'whiteSpace': 'no-wrap',
+            'paddingLeft' : '10px',
         },
         style_cell_conditional=[{
         'if': {'row_index': 'odd'},
         'backgroundColor': 'rgb(248, 248, 248)'
         }],
-        css=[{
-        'selector': '.dash-cell',
-        'rule': 'padding-left: 10px;'
-        }],
+        # css=[{
+        # 'selector': '.dash-cell',
+        # 'rule': 'padding-left: 10px;'
+        # }],
     ),
-#  html.Div([
-#         dcc.Input(
-#             id='editing-columns-name',
-#             placeholder='Enter a column name...',
-#             value='',
-#             style={'padding': 10}
-#         ),
-#         html.Button('Add Column', id='editing-columns-button', n_clicks=0)
-#     ], style={'height': 50}),
-
-#     dash_table.DataTable(
-#         id='editing-columns',
-#         columns=[{
-#             'name': 'Column {}'.format(i),
-#             'id': 'column-{}'.format(i),
-#             'deletable': True,
-#             'editable_name': True
-#         } for i in range(1, 5)],
-#         data=[
-#             {'column-{}'.format(i): (j + (i-1)*5) for i in range(1, 5)}
-#             for j in range(5)
-#         ],
-#         editable=True,
-#     ),
-
-    dcc.Graph(
-        id='usd-pledged-vs-date',
-    ),
-])
+    ])
 
 
 ##############################################################
@@ -183,58 +170,62 @@ app.layout = html.Div(children=[
 #                                                            #
 ##############################################################
 
-@app.callback(
-    dash.dependencies.Output('output-container-date-picker-range', 'children'),
-    [dash.dependencies.Input('my-date-picker-range', 'start_date'),
-     dash.dependencies.Input('my-date-picker-range', 'end_date')])
+# @app.callback(
+#     dash.dependencies.Output('output-container-date-picker-range', 'children'),
+#     [dash.dependencies.Input('my-date-picker-range', 'start_date'),
+#      dash.dependencies.Input('my-date-picker-range', 'end_date')])
 
-def update_output(start_date, end_date):
-    string_prefix = 'You have selected: '
-    if start_date is not None:
-        start_date = dt.strptime(start_date, '%Y-%m-%d')
-        start_date_string = start_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
-    if end_date is not None:
-        end_date = dt.strptime(end_date, '%Y-%m-%d')
-        end_date_string = end_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'End Date: ' + end_date_string
-    if len(string_prefix) == len('You have selected: '):
-        return 'Select a date to see it displayed here'
-    else:
-        return string_prefix
+# def update_output(start_date, end_date):
+#     string_prefix = 'You have selected: '
+#     if start_date is not None:
+#         start_date = dt.strptime(start_date, '%Y-%m-%d')
+#         start_date_string = start_date.strftime('%B %d, %Y')
+#         string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
+#     if end_date is not None:
+#         end_date = dt.strptime(end_date, '%Y-%m-%d')
+#         end_date_string = end_date.strftime('%B %d, %Y')
+#         string_prefix = string_prefix + 'End Date: ' + end_date_string
+#     if len(string_prefix) == len('You have selected: '):
+#         return 'Select a date to see it displayed here'
+#     else:
+#         return string_prefix
 
 #Update table
 @app.callback(
     dash.dependencies.Output('data-table', 'data'),
-    # dash.dependencies.Output('data-table', 'columns')
-    # dash.dependencies.Output('data-table', 'children'),
-    [
-        dash.dependencies.Input('channel', 'value'),
-        dash.dependencies.Input('metrics', 'value'),
-        dash.dependencies.Input('my-date-picker-range', 'start_date'),
-        dash.dependencies.Input('my-date-picker-range', 'end_date'),
-    ])
+    [dash.dependencies.Input('channel', 'value'),
+    dash.dependencies.Input('metrics', 'value'),
+    dash.dependencies.Input('my-date-picker-range', 'start_date'),
+    dash.dependencies.Input('my-date-picker-range', 'end_date'),])
 
 def update_table(channel, metric, start_date, end_date ):
     
     if channel is None or channel == []:
         channel = CHANNELS
-    #print('channel', channel)
+    
     if metric is None or metric == []:
         metric = default_metric
-    print('metric', metric)
+    
     sub_df = {}
     data = [] 
-    print('table update channels', channel)
     for c in channel:
         sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
-        default_metric = metric
-        # print(sub_df[c][['Kanal', 'Datum', metric]])
+        #Format date column
+        sub_df[c]['Datum'] = sub_df[c]['Datum'].dt.strftime('%d/%m/%Y')
+        #Format currency columns
+        sub_df[c]['Umsatz'] = sub_df[c]['Umsatz'].map('{:.2f}€'.format)
+        sub_df[c]['RE1_abs'] = sub_df[c]['RE1_abs'].map('{:.2f}€'.format)
+        sub_df[c]['AvgWarenkorbwert'] = sub_df[c]['AvgWarenkorbwert'].map('{:.2f}€'.format)
+        sub_df[c]['AnzahlArtikelproWarenkorb'] = sub_df[c]['AnzahlArtikelproWarenkorb'].map('{:.2f}€'.format)
+
+        #Format percent column
+        sub_df[c]['RE1_rel'] = (sub_df[c]['RE1_rel']*100).map('{:.2f}%'.format)
+        
         data.append(sub_df[c][['Kanal', 'Datum', metric]])
-    print(pd.concat(data).to_dict('records'))
         
     return pd.concat(data).to_dict('records')
 
+#Update columns
 @app.callback(
     dash.dependencies.Output('data-table', 'columns'),
     [dash.dependencies.Input('metrics', 'value')],
@@ -249,7 +240,7 @@ def update_columns(metric, existing_columns):
     
 #Update graphic
 @app.callback(
-    dash.dependencies.Output('usd-pledged-vs-date', 'figure'),
+    dash.dependencies.Output('metric-vs-date', 'figure'),
     [
         dash.dependencies.Input('channel', 'value'),
         dash.dependencies.Input('metrics', 'value'),
@@ -274,11 +265,12 @@ def update_scatterplot(channel, metric, start_date, end_date ):
     return {
         'data': [ traces[key] for key in channel],
         'layout': go.Layout(
-            xaxis={'title': 'Date'},
-            yaxis={'title': metric},
-            margin={'l': 60, 'b': 40, 't': 50, 'r': 60},
-            legend=dict(orientation="h"),
-            hovermode='closest'
+            xaxis={'title': 'Datum'},
+                         yaxis={'title': metric},
+            margin={'l': 60, 'b': 50, 't': 20, 'r': 60},
+            legend=dict(orientation="h", x=0, y=-0.2),
+            hovermode='closest',
+            font=dict(family='sans-serif', size=14)
         )
     }
 

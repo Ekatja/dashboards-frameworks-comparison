@@ -12,6 +12,7 @@ body {
     font-weight: 400;
     font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: rgb(50, 50, 50); 
+    margin: 10px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -34,8 +35,12 @@ h1, h2, h3, h4, h5, h6 {
     outline: 0; 
 }
 #channel, #metrics {
-width: 20%;
+width: 30%;
 display: inline-table;
+}
+.DateInput.DateInput--open-down {
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
 
 #data-table {
