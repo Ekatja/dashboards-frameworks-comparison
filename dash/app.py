@@ -11,10 +11,17 @@ import dateutil
 import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime as dt
+import os
 
+
+DATABASE_USER = os.getenv("DATABASE_USER")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+DATABASE_HOST = os.getenv("DATABASE_HOST")
+USERNAME = os.getenv("USERNAME")
+DASHBOARDPASS = os.getenv("DASHBOARDPASS")
 # Keep this out of source code repository - save in a file or a database
 VALID_USERNAME_PASSWORD_PAIRS = [
-    ['fla', 'test']
+    ['USERNAME', 'DASHBOARDPASS']
 ]
 
 # external_stylesheets = ['hier ein Link']
@@ -35,7 +42,7 @@ auth = dash_auth.BasicAuth(
 ##############################################################
 
 # # Connect to mysql database
-# connection = sql.connect(user='###', password='###', host='###')
+# connection = sql.connect(user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST)
 # cursor = connection.cursor()
 # # Build a SQL query and run it
 # query = ("""
