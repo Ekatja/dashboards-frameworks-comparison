@@ -3,6 +3,7 @@
 import os
 import pymysql as sql
 import dash
+import dash_auth
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
@@ -11,8 +12,21 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime as dt
 
+# Keep this out of source code repository - save in a file or a database
+VALID_USERNAME_PASSWORD_PAIRS = [
+    ['fla', 'test']
+]
+
+# external_stylesheets = ['hier ein Link']
+
+# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app = dash.Dash(__name__)
+
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
 ##############################################################
 #                                                            #
@@ -21,7 +35,7 @@ app = dash.Dash(__name__)
 ##############################################################
 
 # # Connect to mysql database
-# connection = sql.connect(user='ekaterina', password='aeLier4tait2yahx', host='127.0.0.1')
+# connection = sql.connect(user='###', password='###', host='###')
 # cursor = connection.cursor()
 # # Build a SQL query and run it
 # query = ("""
@@ -65,7 +79,6 @@ app = dash.Dash(__name__)
 
 df = pd.read_csv('.\\dash\\verkaufte_artikel_2018.csv', parse_dates=True)
 df[['RE1_rel', 'AvgWarenkorbwert','AnzahlArtikelproWarenkorb']] = df[['RE1_rel', 'AvgWarenkorbwert','AnzahlArtikelproWarenkorb']].apply(lambda x: round(x, 2))
-
 df['Datum'] = pd.to_datetime(df['Datum'], format='%Y-%m-%d')
 
 
@@ -174,7 +187,6 @@ app.layout = html.Div(children=[
 ])
 
 
-
 def filter_data(channel, metric, start_date, end_date):
     
     sub_df = df[(df.Kanal == channel) & (df.Datum >= start_date) & (df.Datum <= end_date)][['Kanal', 'Datum', metric]]
@@ -239,7 +251,7 @@ def update_table(channel, metric, start_date, end_date, n_clicks ):
     data = [] 
     for c in channel:
         sub_df[c] = filter_data(c, metric, start_date, end_date)
-                data.append(sub_df[c])
+        data.append(sub_df[c])
     result = pd.concat(data)
     # Click on export button
     if(n_clicks is not None):
