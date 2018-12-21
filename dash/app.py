@@ -11,19 +11,25 @@ import dateutil
 import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime as dt
+import dotenv
 import os
 
 
-DATABASE_USER = os.getenv("DATABASE_USER")
+DATABASE_USER = os.getenv('DATABASE_USER')
 DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
 DATABASE_HOST = os.getenv("DATABASE_HOST")
 USERNAME = os.getenv("USERNAME")
 DASHBOARDPASS = os.getenv("DASHBOARDPASS")
 # Keep this out of source code repository - save in a file or a database
-VALID_USERNAME_PASSWORD_PAIRS = [
-    ['USERNAME', 'DASHBOARDPASS']
-]
+# VALID_USERNAME_PASSWORD_PAIRS = [
+#     ['USERNAME', 'DASHBOARDPASS']
+# ]
 
+#Login and pass for dashboard
+VALID_USERNAME_PASSWORD_PAIRS = [
+    ['fla', 'test']
+]
+print(DATABASE_USER)
 # external_stylesheets = ['hier ein Link']
 
 # app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
