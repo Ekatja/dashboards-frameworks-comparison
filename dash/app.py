@@ -136,15 +136,15 @@ app.layout = html.Div(children=[
         id='data-table',
         columns=[{"name": i, "id": i} for i in df[['Kanal', 'Datum', default_metric]].columns],
         data=df.to_dict("rows"),
-        sorting=True,
-        sorting_type="multi",
+        # sorting=True,
+        # sorting_type="multi",
         
         style_header={
         'backgroundColor': 'rgba(117, 99, 79, 0.5)',
         'fontSize': '1.2em',
         'fontFamily': 'sans-serif',
         'fontWeight': 'bold',
-        'paddingLeft': '10px'
+        # 'paddingLeft': '10px'
         },
         style_cell={
             'textAlign': 'left',
@@ -175,22 +175,21 @@ app.layout = html.Div(children=[
 
 
 
-def filter_data(channel, start_date, end_date):
-    # sub_df = {}
-
-    sub_df = df[(df.Kanal == channel) & (df.Datum >= start_date) & (df.Datum <= end_date)]
+def filter_data(channel, metric, start_date, end_date):
+    
+    sub_df = df[(df.Kanal == channel) & (df.Datum >= start_date) & (df.Datum <= end_date)][['Kanal', 'Datum', metric]]
     return sub_df
 
-# def format_date(data):
-#     #Format date column
-#     # print(data['Datum'])
-#     # data['Datum'] = pd.to_datetime(data['Datum'], format='%Y-%m-%d')
-#     # data['Datum'] = data['Datum'].dt.strftime('%d/%m/%Y')
-#     #format last column with metrics depends on column name
-#     if(data.columns[-1] == ('Umsatz' or 'RE1_abs' or 'AvgWarenkorbwert' or 'AnzahlArtikelproWarenkorb')):
-#         data[data.columns[-1]] = data[data.columns[-1]].map('{:.2f}€'.format)
-#     elif(data.columns[-1] == 'RE1_rel'):
-#         data[data.columns[-1]] = (data[data.columns[-1]]*100).map('{:.2f}%'.format)
+def format_data(data):
+    #Format date column
+    
+    data['Datum'] = pd.to_datetime(data['Datum'], format='%Y-%m-%d')
+    data['Datum'] = data['Datum'].dt.strftime('%d/%m/%Y')
+    #format last column with metrics depends on column name
+    if(data.columns[-1] in ['Umsatz', 'RE1_abs', 'AvgWarenkorbwert']):
+        data[data.columns[-1]] = data[data.columns[-1]].map('{:.2f}€'.format)
+    elif(data.columns[-1] == 'RE1_rel'):
+        data[data.columns[-1]] = (data[data.columns[-1]]*100).map('{:.2f}%'.format)
 
 ##############################################################
 #                                                            #
@@ -239,31 +238,15 @@ def update_table(channel, metric, start_date, end_date, n_clicks ):
     sub_df = {}
     data = [] 
     for c in channel:
-        sub_df[c] = filter_data(c, start_date, end_date)
-        # print('sub df get', sub_df[c][['Kanal', 'Datum', metric]] )
-
-        # sub_df[c] = df[(df.Kanal == c) & (start_date <= df.Datum) & (df.Datum <= end_date)]
-        #Format date column
-        sub_df[c]['Datum'] = sub_df[c]['Datum'].dt.strftime('%d/%m/%Y')
-        #Format currency columns
-        sub_df[c]['Umsatz'] = sub_df[c]['Umsatz'].map('{:.2f}€'.format)
-        sub_df[c]['RE1_abs'] = sub_df[c]['RE1_abs'].map('{:.2f}€'.format)
-        sub_df[c]['AvgWarenkorbwert'] = sub_df[c]['AvgWarenkorbwert'].map('{:.2f}€'.format)
-        sub_df[c]['AnzahlArtikelproWarenkorb'] = sub_df[c]['AnzahlArtikelproWarenkorb'].map('{:.2f}€'.format)
-
-        #Format percent column
-        sub_df[c]['RE1_rel'] = (sub_df[c]['RE1_rel']*100).map('{:.2f}%'.format)
-        data.append(sub_df[c][['Kanal', 'Datum', metric]])
-        # data.append(sub_df[c][['Kanal', 'Datum', metric]])
+        sub_df[c] = filter_data(c, metric, start_date, end_date)
+                data.append(sub_df[c])
     result = pd.concat(data)
-    # print(format_date(result))
+    # Click on export button
     if(n_clicks is not None):
-        print('i am save button')
         result.to_csv(exportfilename, index=False, encoding='utf-8')
-            
+    #Format data for show in table
+    format_data(result)        
     return result.to_dict('records')
-
-    
 
 #Update columns
 @app.callback(
